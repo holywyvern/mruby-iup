@@ -8,12 +8,14 @@
 #include "mruby/gui.h"
 
 #include "iup.h"
+#include "iupim.h"
 
 #include <string.h>
 #include <stdarg.h>
 
 #define CHILDREN mrb_intern_cstr(mrb, "#_children_")
 #define PROCS mrb_intern_cstr(mrb, "#_procs_")
+#define ATTRS mrb_intern_cstr(mrb, "#_attrs_")
 
 struct iup_known_callbacks
 {
@@ -106,6 +108,7 @@ mrb_initialize(mrb_state *mrb, mrb_value self)
   DATA_PTR(self) = handle;
   mrb_iv_set(mrb, self, CHILDREN, mrb_ary_new(mrb));
   mrb_iv_set(mrb, self, PROCS, mrb_hash_new(mrb));
+  mrb_iv_set(mrb, self, ATTRS, mrb_hash_new(mrb));
   return self;
 }
 
@@ -186,6 +189,12 @@ mrb_get_attribute(mrb_state *mrb, mrb_value self)
   return mrb_str_new_cstr(mrb, IupGetAttribute(data->handle, name));
 }
 
+static inline mrb_bool
+mrb_iup_handle_p(mrb_value value)
+{
+  return mrb_data_p(value) && DATA_TYPE(value) == &mrb_iup_handle_data_type;
+}
+
 static mrb_value
 mrb_set_attribute(mrb_state *mrb, mrb_value self)
 {
@@ -194,7 +203,11 @@ mrb_set_attribute(mrb_state *mrb, mrb_value self)
   mrb_value value;
   mrb_get_args(mrb, "zo", &name, &value);
   data = mrb_iup_get_handle(mrb, self);
-  if (mrb_fixnum_p(value))
+  if (mrb_nil_p(value))
+  {
+    IupResetAttribute(data->handle, name);
+  }
+  else if (mrb_fixnum_p(value))
   {
     IupSetInt(data->handle, name, mrb_fixnum(value));
   }
@@ -210,6 +223,14 @@ mrb_set_attribute(mrb_state *mrb, mrb_value self)
     b = mrb_int(mrb, mrb_ary_entry(value, 0));
     a = mrb_int(mrb, mrb_ary_entry(value, 0));
     IupSetRGBA(data->handle, name, r, g, b, a);
+  }
+  else if (mrb_iup_handle_p(value))
+  {
+    mrb_iup_handle *handle = mrb_iup_get_handle(mrb, value);
+    IupSetAttributeHandle(data->handle, name, handle->handle);
+    mrb_hash_set(
+      mrb, mrb_iv_get(mrb, self, ATTRS), mrb_str_new_cstr(mrb, name), value
+    );
   }
   else if (mrb_proc_p(value) || mrb_respond_to(mrb, value, mrb_intern_cstr(mrb, "call")))
   {
@@ -315,6 +336,18 @@ mrb_hide(mrb_state *mrb, mrb_value self)
   return mrb_fixnum_value(IupHide(data->handle));
 }
 
+static mrb_value
+mrb_save_image(mrb_state *mrb, mrb_value self)
+{
+  mrb_int argc;
+  const char *name, *format;
+  mrb_iup_handle *data = mrb_iup_get_handle(mrb, self);
+  argc = mrb_get_args(mrb, "z|z", &name, &format);
+  if (argc < 2) format = "PNG";
+  IupSaveImage(data->handle, name, format);
+  return self;
+}
+
 struct RClass *
 mrb_init_iup_handle(mrb_state *mrb, struct RClass *iup)
 {
@@ -344,6 +377,8 @@ mrb_init_iup_handle(mrb_state *mrb, struct RClass *iup)
   mrb_define_method(mrb, handle, "popup", mrb_popup, MRB_ARGS_REQ(2));
   mrb_define_method(mrb, handle, "show", mrb_show, MRB_ARGS_REQ(2));
   mrb_define_method(mrb, handle, "hide", mrb_hide, MRB_ARGS_NONE());
+
+  mrb_define_method(mrb, handle, "save_image", mrb_save_image, MRB_ARGS_REQ(1)|MRB_ARGS_OPT(1));
 
   return handle;
 }

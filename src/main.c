@@ -15,6 +15,7 @@
 #include "iup.h"
 #include "iup_scintilla.h"
 #include "iupfiledlg.h"
+#include "iupim.h"
 
 #include <string.h>
 
@@ -141,6 +142,34 @@ mrb_iup_scintilla_dialog(mrb_state *mrb, mrb_value self)
   return new_handle(mrb, IupScintillaDlg());
 }
 
+static mrb_value
+mrb_iup_image(mrb_state *mrb, mrb_value self)
+{
+  const char *name;
+  mrb_get_args(mrb, "z", &name);
+  return new_handle(mrb, IupLoadImage(name));
+}
+
+static mrb_value
+mrb_iup_clipboard(mrb_state *mrb, mrb_value self)
+{
+  return new_handle(mrb, IupClipboard());
+}
+
+static mrb_value
+mrb_iup_user(mrb_state *mrb, mrb_value self)
+{
+  return new_handle(mrb, IupUser());
+}
+
+static mrb_value
+mrb_iup_help(mrb_state *mrb, mrb_value self)
+{
+  const char *url;
+  mrb_get_args(mrb, "z", &url);
+  return mrb_fixnum_value(IupHelp(url));
+}
+
 struct RClass *
 mrb_init_iup_handle(mrb_state *mrb, struct RClass *iup);
 
@@ -166,6 +195,11 @@ mrb_mruby_iup_gem_init(mrb_state *mrb)
   mrb_define_module_function(mrb, iup, "font_dialog", mrb_iup_font_dialog, MRB_ARGS_NONE());
   mrb_define_module_function(mrb, iup, "progress_dialog", mrb_iup_progress_dialog, MRB_ARGS_NONE());
   mrb_define_module_function(mrb, iup, "scintilla_dialog", mrb_iup_scintilla_dialog, MRB_ARGS_NONE());
+
+  mrb_define_module_function(mrb, iup, "help", mrb_iup_help, MRB_ARGS_REQ(1));
+  mrb_define_module_function(mrb, iup, "image", mrb_iup_image, MRB_ARGS_REQ(1));
+  mrb_define_module_function(mrb, iup, "clipboard", mrb_iup_clipboard, MRB_ARGS_NONE());
+  mrb_define_module_function(mrb, iup, "user", mrb_iup_user, MRB_ARGS_NONE());
 
   IUP_CONST(NOERROR);
   IUP_CONST(INVALID);

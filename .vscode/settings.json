@@ -4,6 +4,9 @@
     "varargs.h": "c",
     "stdarg.h": "c",
     "iupfiledlg.h": "c",
-    "string.h": "c"
+    "string.h": "c",
+    "iupim.h": "c",
+    "*.def": "c",
+    "typeinfo": "c"
   }
 }
