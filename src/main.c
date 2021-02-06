@@ -11,6 +11,8 @@
 #include "mruby/string.h"
 #include "mruby/error.h"
 #include "mruby/gui.h"
+#include "mruby/string.h"
+#include "mruby/array.h"
 
 #include "iup.h"
 #include "iup_scintilla.h"
@@ -179,6 +181,75 @@ mrb_iup_config(mrb_state *mrb, mrb_value self)
   return new_handle(mrb, IupConfig());
 }
 
+static mrb_value
+mrb_iup_alarm(mrb_state *mrb, mrb_value self)
+{
+  const char *title, *message, *b1, *b2, *b3;
+  mrb_int argc = mrb_get_args(mrb, "zzz|zz", &title, &message, &b1, &b2, &b3);
+  if (argc < 4) b2 = NULL;
+  if (argc < 5) b3 = NULL;
+  return mrb_fixnum_value(IupAlarm(title, message, b1, b2, b3));
+}
+
+static mrb_value
+mrb_iup_get_file(mrb_state *mrb, mrb_value self)
+{
+  char result[4097];
+  const char *filename;
+  mrb_value value;
+  mrb_get_args(mrb, "z", &filename);
+  value = mrb_ary_new(mrb);
+  strcpy(result, filename);
+  mrb_ary_push(mrb, value, mrb_fixnum_value(IupGetFile(result)));
+  mrb_ary_push(mrb, value, mrb_str_new_cstr(mrb, result));
+  return value;
+}
+
+static mrb_value
+mrb_iup_get_color(mrb_state *mrb, mrb_value self)
+{
+  mrb_int x, y;
+  unsigned char r, g, b;
+  mrb_get_args(mrb, "ii", &x, &y);
+  if (IupGetColor(x, y, &r, &g, &b))
+  {
+    mrb_value values[] = {
+      mrb_fixnum_value(r),
+      mrb_fixnum_value(g),
+      mrb_fixnum_value(b),
+      mrb_fixnum_value(255)
+    };
+    return mrb_ary_new_from_values(mrb, 4, values);
+  }
+  return mrb_nil_value();
+}
+
+static mrb_value
+mrb_iup_message_box(mrb_state *mrb, mrb_value self)
+{
+  const char *title, *message;
+  mrb_get_args(mrb, "zz", &title, &message);
+  IupMessage(title, message);
+  return self;
+}
+
+static mrb_value
+mrb_iup_error_box(mrb_state *mrb, mrb_value self)
+{
+  const char *message;
+  mrb_get_args(mrb, "z", &message);
+  IupMessageError(NULL, message);
+  return self;
+}
+
+static mrb_value
+mrb_iup_alarm_box(mrb_state *mrb, mrb_value self)
+{
+  const char *title, *message, *buttons;
+  mrb_get_args(mrb, "zzz", &title, &message, &buttons);
+  return mrb_fixnum_value(IupMessageAlarm(NULL, title, message, buttons));
+}
+
 struct RClass *
 mrb_init_iup_handle(mrb_state *mrb, struct RClass *iup);
 
@@ -205,11 +276,19 @@ mrb_mruby_iup_gem_init(mrb_state *mrb)
   mrb_define_module_function(mrb, iup, "progress_dialog", mrb_iup_progress_dialog, MRB_ARGS_NONE());
   mrb_define_module_function(mrb, iup, "scintilla_dialog", mrb_iup_scintilla_dialog, MRB_ARGS_NONE());
 
+  mrb_define_module_function(mrb, iup, "alarm", mrb_iup_alarm, MRB_ARGS_REQ(3)|MRB_ARGS_OPT(2));
+  mrb_define_module_function(mrb, iup, "get_file", mrb_iup_get_file, MRB_ARGS_REQ(1));
+  mrb_define_module_function(mrb, iup, "get_color", mrb_iup_get_color, MRB_ARGS_REQ(2));
+
   mrb_define_module_function(mrb, iup, "help", mrb_iup_help, MRB_ARGS_REQ(1));
   mrb_define_module_function(mrb, iup, "image", mrb_iup_image, MRB_ARGS_REQ(1));
   mrb_define_module_function(mrb, iup, "clipboard", mrb_iup_clipboard, MRB_ARGS_NONE());
   mrb_define_module_function(mrb, iup, "user", mrb_iup_user, MRB_ARGS_NONE());
   mrb_define_module_function(mrb, iup, "config", mrb_iup_config, MRB_ARGS_NONE());
+
+  mrb_define_module_function(mrb, iup, "message_box", mrb_iup_message_box, MRB_ARGS_REQ(2));
+  mrb_define_module_function(mrb, iup, "error_box", mrb_iup_error_box, MRB_ARGS_REQ(1));
+  mrb_define_module_function(mrb, iup, "alarm_box", mrb_iup_alarm_box, MRB_ARGS_REQ(3));
 
   IUP_CONST(NOERROR);
   IUP_CONST(INVALID);
