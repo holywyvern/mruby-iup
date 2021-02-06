@@ -8,12 +8,20 @@
 #include <mruby/array.h>
 #include <mruby/variable.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 int main(int argc, char *argv[])
 {
   mrb_state *mrb = mrb_open();
   mrb_value ARGV = mrb_ary_new_capa(mrb, argc);
   int i;
   int return_value;
+
+#ifdef _WIN32
+  FreeConsole();
+#endif
 
   mrb_gv_set(mrb, mrb_intern_lit(mrb, "$0"), mrb_str_new_cstr(mrb, argv[0]));
   for (i = 0; i < argc; i++) {
