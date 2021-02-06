@@ -1,0 +1,7 @@
+name: mruby-iup
+description: Example class
+author: Ramiro Rojo
+website: https://github.com/holywyvern/mruby-iup
+protocol: git
+repository: https://github.com/holywyvern/mruby-iup.git
+license: Apache-2.0
