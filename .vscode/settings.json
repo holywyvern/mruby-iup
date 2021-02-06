@@ -8,6 +8,7 @@
     "iupim.h": "c",
     "*.def": "c",
     "typeinfo": "c",
-    "iup_scintilla.h": "c"
+    "iup_scintilla.h": "c",
+    "iup_config.h": "c"
   }
 }
