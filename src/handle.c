@@ -9,6 +9,7 @@
 
 #include "iup.h"
 #include "iupim.h"
+#include "iup_config.h"
 
 #include <string.h>
 #include <stdarg.h>
@@ -45,6 +46,16 @@ mrb_free_handle(mrb_state *mrb, void *ptr)
 const struct mrb_data_type mrb_iup_handle_data_type = {
    "Iup::Handle", mrb_free_handle
 };
+
+static mrb_value
+new_handle(mrb_state *mrb, Ihandle *handle)
+{
+  struct RClass *iup = mrb_module_get(mrb, "IUP");
+  mrb_value result = mrb_obj_new(mrb, mrb_class_get_under(mrb, iup, "Handle"), 0, NULL);
+  mrb_iup_handle *ptr = DATA_PTR(result);
+  ptr->handle = handle;
+  return result;
+}
 
 static void
 resize_elements(mrb_state *mrb, mrb_iup_handle *handle)
@@ -310,6 +321,16 @@ mrb_get_color(mrb_state *mrb, mrb_value self)
 }
 
 static mrb_value
+mrb_get_handle(mrb_state *mrb, mrb_value self)
+{
+  mrb_iup_handle *data;
+  const char *name;
+  mrb_get_args(mrb, "z", &name);
+  data = mrb_iup_get_handle(mrb, self);
+  return new_handle(mrb, IupGetAttributeHandle(data->handle, name));
+}
+
+static mrb_value
 mrb_popup(mrb_state *mrb, mrb_value self)
 {
   mrb_iup_handle *data;
@@ -348,6 +369,13 @@ mrb_save_image(mrb_state *mrb, mrb_value self)
   return self;
 }
 
+static mrb_value
+mrb_load_config(mrb_state *mrb, mrb_value self)
+{
+  mrb_iup_handle *data = mrb_iup_get_handle(mrb, self);
+  return mrb_fixnum_value(IupConfigLoad(data->handle));
+}
+
 struct RClass *
 mrb_init_iup_handle(mrb_state *mrb, struct RClass *iup)
 {
@@ -373,12 +401,15 @@ mrb_init_iup_handle(mrb_state *mrb, struct RClass *iup)
   mrb_define_method(mrb, handle, "get_int2", mrb_get_int2, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, handle, "get_float", mrb_get_float, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, handle, "get_color", mrb_get_color, MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, handle, "get_handle", mrb_get_handle, MRB_ARGS_REQ(1));
 
   mrb_define_method(mrb, handle, "popup", mrb_popup, MRB_ARGS_REQ(2));
   mrb_define_method(mrb, handle, "show", mrb_show, MRB_ARGS_REQ(2));
   mrb_define_method(mrb, handle, "hide", mrb_hide, MRB_ARGS_NONE());
 
   mrb_define_method(mrb, handle, "save_image", mrb_save_image, MRB_ARGS_REQ(1)|MRB_ARGS_OPT(1));
+
+  mrb_define_method(mrb, handle, "load_config", mrb_load_config, MRB_ARGS_NONE());
 
   return handle;
 }

@@ -16,6 +16,7 @@
 #include "iup_scintilla.h"
 #include "iupfiledlg.h"
 #include "iupim.h"
+#include "iup_config.h"
 
 #include <string.h>
 
@@ -50,6 +51,8 @@ mrb_iup_open(mrb_state *mrb, mrb_value self)
   {
     mrb_raise(mrb, E_RUNTIME_ERROR, "Failed to initialize IUP Library");
   }
+  IupImageLibOpen();
+  IupScintillaOpen();
   mrb_gc_arena_restore(mrb, arena);
   iup_open = TRUE;
   return self;
@@ -170,6 +173,12 @@ mrb_iup_help(mrb_state *mrb, mrb_value self)
   return mrb_fixnum_value(IupHelp(url));
 }
 
+static mrb_value
+mrb_iup_config(mrb_state *mrb, mrb_value self)
+{
+  return new_handle(mrb, IupConfig());
+}
+
 struct RClass *
 mrb_init_iup_handle(mrb_state *mrb, struct RClass *iup);
 
@@ -200,6 +209,7 @@ mrb_mruby_iup_gem_init(mrb_state *mrb)
   mrb_define_module_function(mrb, iup, "image", mrb_iup_image, MRB_ARGS_REQ(1));
   mrb_define_module_function(mrb, iup, "clipboard", mrb_iup_clipboard, MRB_ARGS_NONE());
   mrb_define_module_function(mrb, iup, "user", mrb_iup_user, MRB_ARGS_NONE());
+  mrb_define_module_function(mrb, iup, "config", mrb_iup_config, MRB_ARGS_NONE());
 
   IUP_CONST(NOERROR);
   IUP_CONST(INVALID);
