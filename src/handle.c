@@ -17,7 +17,7 @@
 #define CHILDREN mrb_intern_cstr(mrb, "#_children_")
 #define PROCS mrb_intern_cstr(mrb, "#_procs_")
 #define ATTRS mrb_intern_cstr(mrb, "#_attrs_")
-
+#define HANDLES mrb_intern_cstr(mrb, "#_attrs_")
 struct iup_known_callbacks
 {
   const char *name;
@@ -47,42 +47,6 @@ const struct mrb_data_type mrb_iup_handle_data_type = {
    "Iup::Handle", mrb_free_handle
 };
 
-static void
-resize_elements(mrb_state *mrb, mrb_iup_handle *handle)
-{
-  if (handle->values.len >= handle->values.capa)
-  {
-    handle->values.capa *= 2;
-    handle->values.elements = (char **)mrb_realloc(
-      mrb, handle->values.elements, sizeof(char *) * handle->values.capa
-    );
-  }
-}
-
-static char *
-push_str_value(mrb_state *mrb, mrb_iup_handle *handle, char *src)
-{
-  char *dst;
-  resize_elements(mrb, handle);
-  dst = mrb_malloc(mrb, strlen(src) + 1);
-  strcpy(dst, src);
-  handle->values.elements[handle->values.len] = dst;
-  handle->values.len++;
-  return dst;
-}
-
-static Icallback
-get_callback(mrb_state *mrb, mrb_value block, mrb_value self)
-{
-  int
-  cb()
-  {
-    mrb_funcall(mrb, block, "call", 1, self);
-    return 0;
-  }
-  return cb;
-}
-
 mrb_iup_handle *
 mrb_iup_get_handle(mrb_state *mrb, mrb_value self)
 {
@@ -93,6 +57,12 @@ mrb_iup_get_handle(mrb_state *mrb, mrb_value self)
     mrb_raise(mrb, E_RUNTIME_ERROR, "Handle not available");
   }
   return data;
+}
+
+mrb_bool
+mrb_iup_handle_p(mrb_value value)
+{
+  return mrb_data_p(value) && DATA_TYPE(value) == &mrb_iup_handle_data_type;
 }
 
 static mrb_value
@@ -178,146 +148,6 @@ mrb_destroy(mrb_state *mrb, mrb_value self)
   IupDestroy(data->handle);
   data->handle = NULL;
   return self;
-}
-
-static mrb_value
-mrb_get_attribute(mrb_state *mrb, mrb_value self)
-{
-  const char *name;
-  mrb_iup_handle *data;
-  mrb_get_args(mrb, "z", &name);
-  data = mrb_iup_get_handle(mrb, self);
-  return mrb_str_new_cstr(mrb, IupGetAttribute(data->handle, name));
-}
-
-static inline mrb_bool
-mrb_iup_handle_p(mrb_value value)
-{
-  return mrb_data_p(value) && DATA_TYPE(value) == &mrb_iup_handle_data_type;
-}
-
-static mrb_value
-mrb_set_attribute(mrb_state *mrb, mrb_value self)
-{
-  mrb_iup_handle *data;
-  const char *name;
-  mrb_value value;
-  mrb_get_args(mrb, "zo", &name, &value);
-  data = mrb_iup_get_handle(mrb, self);
-  if (mrb_nil_p(value))
-  {
-    IupResetAttribute(data->handle, name);
-  }
-  else if (mrb_fixnum_p(value))
-  {
-    IupSetInt(data->handle, name, mrb_fixnum(value));
-  }
-  else if (mrb_float_p(value))
-  {
-    IupSetDouble(data->handle, name, mrb_float(value));
-  }
-  else if (mrb_array_p(value))
-  {
-    mrb_int r, g, b, a;
-    r = mrb_int(mrb, mrb_ary_entry(value, 0));
-    g = mrb_int(mrb, mrb_ary_entry(value, 0));
-    b = mrb_int(mrb, mrb_ary_entry(value, 0));
-    a = mrb_int(mrb, mrb_ary_entry(value, 0));
-    IupSetRGBA(data->handle, name, r, g, b, a);
-  }
-  else if (mrb_iup_handle_p(value))
-  {
-    mrb_iup_handle *handle = mrb_iup_get_handle(mrb, value);
-    IupSetAttributeHandle(data->handle, name, handle->handle);
-    mrb_hash_set(
-      mrb, mrb_iv_get(mrb, self, ATTRS), mrb_str_new_cstr(mrb, name), value
-    );
-  }
-  else if (mrb_proc_p(value) || mrb_respond_to(mrb, value, mrb_intern_cstr(mrb, "call")))
-  {
-    mrb_hash_set(mrb, mrb_iv_get(mrb, self, PROCS), mrb_str_new_cstr(mrb, name), value);
-    IupSetCallback(data->handle, name, get_callback(mrb, value, self));
-  }
-  else
-  {
-    char *v = push_str_value(mrb, data, mrb_str_to_cstr(mrb, mrb_funcall(mrb, value, "to_s", 0)));
-    IupSetAttribute(data->handle, name, v);
-  }
-  return self;
-}
-
-static mrb_value
-mrb_get_int(mrb_state *mrb, mrb_value self)
-{
-  mrb_iup_handle *data;
-  const char *name;
-  mrb_get_args(mrb, "z", &name);
-  data = mrb_iup_get_handle(mrb, self);
-  return mrb_fixnum_value(IupGetInt(data->handle, name));
-}
-
-static mrb_value
-mrb_get_ints(mrb_state *mrb, mrb_value self)
-{
-  int a, b;
-  mrb_iup_handle *data;
-  const char *name;
-  mrb_get_args(mrb, "z", &name);
-  data = mrb_iup_get_handle(mrb, self);
-  IupGetIntInt(data->handle, name, &a, &b);
-  mrb_value values[] = {
-    mrb_fixnum_value(a),
-    mrb_fixnum_value(b),
-  };
-  return mrb_ary_new_from_values(mrb, 2, values);
-}
-
-static mrb_value
-mrb_get_int2(mrb_state *mrb, mrb_value self)
-{
-  mrb_iup_handle *data;
-  const char *name;
-  mrb_get_args(mrb, "z", &name);
-  data = mrb_iup_get_handle(mrb, self);
-  return mrb_fixnum_value(IupGetInt2(data->handle, name));
-}
-
-static mrb_value
-mrb_get_float(mrb_state *mrb, mrb_value self)
-{
-  mrb_iup_handle *data;
-  const char *name;
-  mrb_get_args(mrb, "z", &name);
-  data = mrb_iup_get_handle(mrb, self);
-  return mrb_float_value(mrb, IupGetDouble(data->handle, name));
-}
-
-static mrb_value
-mrb_get_color(mrb_state *mrb, mrb_value self)
-{
-  unsigned char r, g, b, a;
-  mrb_iup_handle *data;
-  const char *name;
-  mrb_get_args(mrb, "z", &name);
-  data = mrb_iup_get_handle(mrb, self);
-  IupGetRGBA(data->handle, name, &r, &g, &b, &a);
-  mrb_value values[] = {
-    mrb_fixnum_value(r),
-    mrb_fixnum_value(g),
-    mrb_fixnum_value(b),
-    mrb_fixnum_value(a),
-  };
-  return mrb_ary_new_from_values(mrb, 4, values);
-}
-
-static mrb_value
-mrb_get_handle(mrb_state *mrb, mrb_value self)
-{
-  mrb_iup_handle *data;
-  const char *name;
-  mrb_get_args(mrb, "z", &name);
-  data = mrb_iup_get_handle(mrb, self);
-  return mrb_iup_new_handle(mrb, IupGetAttributeHandle(data->handle, name));
 }
 
 static mrb_value
@@ -481,6 +311,12 @@ mrb_iup_new_handle(mrb_state *mrb, Ihandle *handle)
 }
 
 void
+mrb_init_iup_attributes(mrb_state *mrb, struct RClass *handle);
+
+void
+mrb_init_iup_draw(mrb_state *mrb, struct RClass *handle);
+
+void
 mrb_init_iup_handle(mrb_state *mrb, struct RClass *iup)
 {
   struct RClass *handle = mrb_define_class_under(mrb, iup, "Handle", mrb->object_class);
@@ -506,17 +342,7 @@ mrb_init_iup_handle(mrb_state *mrb, struct RClass *iup)
 
   mrb_define_method(mrb, handle, "parent=", mrb_reparent, MRB_ARGS_REQ(1));
 
-  mrb_define_method(mrb, handle, "[]", mrb_get_attribute, MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, handle, "[]=", mrb_set_attribute, MRB_ARGS_REQ(2));
-
-  mrb_define_method(mrb, handle, "set_attribute", mrb_set_attribute, MRB_ARGS_REQ(2));
-  mrb_define_method(mrb, handle, "get_string", mrb_get_attribute, MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, handle, "get_int", mrb_get_int, MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, handle, "get_ints", mrb_get_ints, MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, handle, "get_int2", mrb_get_int2, MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, handle, "get_float", mrb_get_float, MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, handle, "get_color", mrb_get_color, MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, handle, "get_handle", mrb_get_handle, MRB_ARGS_REQ(1));
+  mrb_init_iup_attributes(mrb, handle);
 
   mrb_define_method(mrb, handle, "popup", mrb_popup, MRB_ARGS_REQ(2));
   mrb_define_method(mrb, handle, "show", mrb_show, MRB_ARGS_REQ(2));
@@ -527,4 +353,8 @@ mrb_init_iup_handle(mrb_state *mrb, struct RClass *iup)
   mrb_define_method(mrb, handle, "load_config", mrb_load_config, MRB_ARGS_NONE());
 
   mrb_define_method(mrb, handle, "==", mrb_EQUAL, MRB_ARGS_REQ(1));
+
+  mrb_init_iup_draw(mrb, handle);
+
+  mrb_mod_cv_set(mrb, iup, HANDLES, mrb_ary_new(mrb));
 }

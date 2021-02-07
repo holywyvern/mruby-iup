@@ -42,6 +42,9 @@ void
 mrb_init_iup_constants(mrb_state *mrb, struct RClass *iup);
 
 void
+mrb_init_iup_languages(mrb_state *mrb, struct RClass *iup);
+
+void
 mrb_mruby_iup_gem_init(mrb_state *mrb)
 {
   struct RClass *iup;
@@ -57,6 +60,7 @@ mrb_mruby_iup_gem_init(mrb_state *mrb)
   mrb_init_iup_standard(mrb, iup);
   mrb_init_iup_additional(mrb, iup);
   mrb_init_iup_constants(mrb, iup);
+  mrb_init_iup_languages(mrb, iup);
 
   DONE;
 }

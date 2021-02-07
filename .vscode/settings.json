@@ -9,6 +9,9 @@
     "*.def": "c",
     "typeinfo": "c",
     "iup_scintilla.h": "c",
-    "iup_config.h": "c"
+    "iup_config.h": "c",
+    "hash.h": "c",
+    "error.h": "c",
+    "variable.h": "c"
   }
 }

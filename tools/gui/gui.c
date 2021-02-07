@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
   int return_value;
 
 #ifdef _WIN32
-  FreeConsole();
+  // FreeConsole();
 #endif
 
   mrb_gv_set(mrb, mrb_intern_lit(mrb, "$0"), mrb_str_new_cstr(mrb, argv[0]));
