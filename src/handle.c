@@ -5,7 +5,7 @@
 #include "mruby/array.h"
 #include "mruby/string.h"
 #include "mruby/hash.h"
-#include "mruby/gui.h"
+#include "mruby-iup/gui.h"
 
 #include "iup.h"
 #include "iupim.h"
@@ -366,6 +366,94 @@ mrb_load_config(mrb_state *mrb, mrb_value self)
   return mrb_fixnum_value(IupConfigLoad(data->handle));
 }
 
+static mrb_value
+mrb_update(mrb_state *mrb, mrb_value self)
+{
+  mrb_iup_handle *data = mrb_iup_get_handle(mrb, self);
+  IupUpdate(data->handle);
+  return self;
+}
+
+static mrb_value
+mrb_update_children(mrb_state *mrb, mrb_value self)
+{
+  mrb_iup_handle *data = mrb_iup_get_handle(mrb, self);
+  IupUpdateChildren(data->handle);
+  return self;
+}
+
+static mrb_value
+mrb_redraw(mrb_state *mrb, mrb_value self)
+{
+  mrb_iup_handle *data = mrb_iup_get_handle(mrb, self);
+  IupRedraw(data->handle, 1);
+  return self;
+}
+
+static mrb_value
+mrb_EQUAL(mrb_state *mrb, mrb_value self)
+{
+  mrb_value obj;
+  mrb_get_args(mrb, "o", &obj);
+  if (mrb_iup_handle_p(obj))
+  {
+    mrb_iup_handle *data = mrb_iup_get_handle(mrb, self);
+    mrb_iup_handle *other = mrb_iup_get_handle(mrb, obj);
+    return mrb_bool_value(data->handle == other->handle);
+  }
+  return mrb_false_value();
+}
+
+static mrb_value
+mrb_reparent(mrb_state *mrb, mrb_value self)
+{
+  mrb_value parent, ref;
+  mrb_iup_handle *new_parent;
+  Ihandle *ref_child = NULL;
+  mrb_int argc = mrb_get_args(mrb, "o|o", &parent, &ref);
+  mrb_iup_handle *data = mrb_iup_get_handle(mrb, self);
+  new_parent = mrb_iup_get_handle(mrb, parent);
+  if (argc > 1)
+  {
+    ref_child = mrb_iup_get_handle(mrb, ref)->handle; 
+  }
+  if (IupReparent(data->handle, new_parent->handle, ref_child) == IUP_NOERROR)
+  {
+    mrb_ary_push(mrb, mrb_iv_get(mrb, parent, CHILDREN), self);
+  }
+  return self;
+}
+
+static mrb_value
+mrb_parent(mrb_state *mrb, mrb_value self)
+{
+  mrb_iup_handle *data = mrb_iup_get_handle(mrb, self);
+  Ihandle *h = IupGetParent(data->handle);
+  return h ? mrb_iup_new_handle(mrb, h) : mrb_nil_value();
+}
+
+static mrb_value
+mrb_children(mrb_state *mrb, mrb_value self)
+{
+  mrb_iup_handle *data = mrb_iup_get_handle(mrb, self);
+  int count = IupGetChildCount(data->handle);
+  mrb_value result = mrb_ary_new_capa(mrb, count);
+  for (int i = 0; i < count; ++i)
+  {
+    Ihandle *child = IupGetChild(data->handle, i);
+    mrb_ary_push(mrb, result, mrb_iup_new_handle(mrb, child));
+  }
+  return result;
+}
+
+static mrb_value
+mrb_dialog(mrb_state *mrb, mrb_value self)
+{
+  mrb_iup_handle *data = mrb_iup_get_handle(mrb, self);
+  Ihandle *h = IupGetDialog(data->handle);
+  return h ? mrb_iup_new_handle(mrb, h) : mrb_nil_value();
+}
+
 void
 mrb_init_iup_handle(mrb_state *mrb, struct RClass *iup)
 {
@@ -381,10 +469,21 @@ mrb_init_iup_handle(mrb_state *mrb, struct RClass *iup)
   mrb_define_method(mrb, handle, "map", mrb_map, MRB_ARGS_NONE());
   mrb_define_method(mrb, handle, "unmap", mrb_unmap, MRB_ARGS_NONE());
   mrb_define_method(mrb, handle, "destroy", mrb_destroy, MRB_ARGS_NONE());
+  mrb_define_method(mrb, handle, "update", mrb_update, MRB_ARGS_NONE());
+  mrb_define_method(mrb, handle, "update_children", mrb_update_children, MRB_ARGS_NONE());
+  mrb_define_method(mrb, handle, "redraw", mrb_redraw, MRB_ARGS_NONE());
+  mrb_define_method(mrb, handle, "reparent", mrb_reparent, MRB_ARGS_REQ(1)|MRB_ARGS_OPT(1));
+
+  mrb_define_method(mrb, handle, "parent", mrb_parent, MRB_ARGS_NONE());
+  mrb_define_method(mrb, handle, "children", mrb_children, MRB_ARGS_NONE());
+  mrb_define_method(mrb, handle, "dialog", mrb_dialog, MRB_ARGS_NONE());
+
+  mrb_define_method(mrb, handle, "parent=", mrb_reparent, MRB_ARGS_REQ(1));
 
   mrb_define_method(mrb, handle, "[]", mrb_get_attribute, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, handle, "[]=", mrb_set_attribute, MRB_ARGS_REQ(2));
 
+  mrb_define_method(mrb, handle, "set_attribute", mrb_set_attribute, MRB_ARGS_REQ(2));
   mrb_define_method(mrb, handle, "get_string", mrb_get_attribute, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, handle, "get_int", mrb_get_int, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, handle, "get_ints", mrb_get_ints, MRB_ARGS_REQ(1));
@@ -400,4 +499,6 @@ mrb_init_iup_handle(mrb_state *mrb, struct RClass *iup)
   mrb_define_method(mrb, handle, "save_image", mrb_save_image, MRB_ARGS_REQ(1)|MRB_ARGS_OPT(1));
 
   mrb_define_method(mrb, handle, "load_config", mrb_load_config, MRB_ARGS_NONE());
+
+  mrb_define_method(mrb, handle, "==", mrb_EQUAL, MRB_ARGS_REQ(1));
 }

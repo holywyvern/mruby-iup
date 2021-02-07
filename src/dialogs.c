@@ -1,6 +1,6 @@
 #include "mruby.h"
 #include "iup.h"
-#include "mruby/gui.h"
+#include "mruby-iup/gui.h"
 
 #include "string.h"
 

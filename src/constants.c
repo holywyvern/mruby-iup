@@ -6,6 +6,7 @@
 void
 mrb_init_iup_constants(mrb_state *mrb, struct RClass *iup)
 {
+  IUP_CONST(ERROR);
   IUP_CONST(NOERROR);
   IUP_CONST(INVALID);
 

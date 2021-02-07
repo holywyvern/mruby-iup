@@ -1,6 +1,6 @@
 #include "mruby.h"
 #include "mruby/array.h"
-#include "mruby/gui.h"
+#include "mruby-iup/gui.h"
 #include "iup.h"
 #include "iupim.h"
 #include "iup_config.h"

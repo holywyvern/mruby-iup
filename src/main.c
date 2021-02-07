@@ -30,6 +30,15 @@ void
 mrb_init_iup_dev(mrb_state *mrb, struct RClass *iup);
 
 void
+mrb_init_iup_containers(mrb_state *mrb, struct RClass *iup);
+
+void
+mrb_init_iup_standard(mrb_state *mrb, struct RClass *iup);
+
+void
+mrb_init_iup_additional(mrb_state *mrb, struct RClass *iup);
+
+void
 mrb_init_iup_constants(mrb_state *mrb, struct RClass *iup);
 
 void
@@ -44,6 +53,9 @@ mrb_mruby_iup_gem_init(mrb_state *mrb)
   mrb_init_iup_tools(mrb, iup);
   mrb_init_iup_messages(mrb, iup);
   mrb_init_iup_dev(mrb, iup);
+  mrb_init_iup_containers(mrb, iup);
+  mrb_init_iup_standard(mrb, iup);
+  mrb_init_iup_additional(mrb, iup);
   mrb_init_iup_constants(mrb, iup);
 
   DONE;

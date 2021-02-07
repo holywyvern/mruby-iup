@@ -1,6 +1,6 @@
 #include "mruby.h"
 #include "iup.h"
-#include "mruby/gui.h"
+#include "mruby-iup/gui.h"
 
 static mrb_value
 mrb_iup_message_box(mrb_state *mrb, mrb_value self)
