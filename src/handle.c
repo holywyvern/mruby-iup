@@ -455,6 +455,32 @@ mrb_dialog(mrb_state *mrb, mrb_value self)
 }
 
 void
+mrb_iup_handle_push_child(mrb_state *mrb, mrb_value self, Ihandle *child)
+{
+  mrb_ary_push(mrb, mrb_iv_get(mrb, self, CHILDREN), mrb_iup_new_handle(mrb, child));
+}
+
+mrb_value
+mrb_iup_new_handle(mrb_state *mrb, Ihandle *handle)
+{
+  if (!handle) return mrb_nil_value();
+  {
+    struct RClass *iup = mrb_module_get(mrb, "IUP");
+    mrb_value result = mrb_obj_new(mrb, mrb_class_get_under(mrb, iup, "Handle"), 0, NULL);
+    mrb_iup_handle *ptr = (mrb_iup_handle *)DATA_PTR(result);
+    ptr->handle = handle;
+    {
+      int size = IupGetChildCount(handle);
+      for (int i = 0; i < size; ++i)
+      {
+        mrb_iup_handle_push_child(mrb, result, IupGetChild(handle, i));
+      }
+    }
+    return result;
+  }
+}
+
+void
 mrb_init_iup_handle(mrb_state *mrb, struct RClass *iup)
 {
   struct RClass *handle = mrb_define_class_under(mrb, iup, "Handle", mrb->object_class);
