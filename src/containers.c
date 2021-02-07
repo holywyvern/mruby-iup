@@ -124,7 +124,10 @@ mrb_iup_radio(mrb_state *mrb, mrb_value self)
   Ihandle *handle = NULL;
   if (mrb_get_args(mrb, "|o", &obj))
   {
-    handle = mrb_iup_get_handle(mrb, obj)->handle;
+    if (!mrb_nil_p(obj))
+    {
+      handle = mrb_iup_get_handle(mrb, obj)->handle;
+    }
   }
   return mrb_iup_new_handle(mrb, IupRadio(handle));
 }
@@ -153,7 +156,10 @@ mrb_iup_frame(mrb_state *mrb, mrb_value self)
   Ihandle *handle = NULL;
   if (mrb_get_args(mrb, "|o", &obj))
   {
-    handle = mrb_iup_get_handle(mrb, obj)->handle;
+    if (!mrb_nil_p(obj))
+    {
+      handle = mrb_iup_get_handle(mrb, obj)->handle;
+    }
   }
   return mrb_iup_new_handle(mrb, IupFrame(handle));
 }
@@ -165,7 +171,10 @@ mrb_iup_flat_frame(mrb_state *mrb, mrb_value self)
   Ihandle *handle = NULL;
   if (mrb_get_args(mrb, "|o", &obj))
   {
-    handle = mrb_iup_get_handle(mrb, obj)->handle;
+    if (!mrb_nil_p(obj))
+    {
+      handle = mrb_iup_get_handle(mrb, obj)->handle;
+    }
   }
   return mrb_iup_new_handle(mrb, IupFlatFrame(handle));
 }
@@ -211,7 +220,10 @@ mrb_iup_background_box(mrb_state *mrb, mrb_value self)
   Ihandle *handle = NULL;
   if (mrb_get_args(mrb, "|o", &obj))
   {
-    handle = mrb_iup_get_handle(mrb, obj)->handle;
+    if (!mrb_nil_p(obj))
+    {
+      handle = mrb_iup_get_handle(mrb, obj)->handle;
+    }
   }
   return mrb_iup_new_handle(mrb, IupBackgroundBox(handle));
 }
@@ -223,7 +235,10 @@ mrb_iup_scroll_box(mrb_state *mrb, mrb_value self)
   Ihandle *handle = NULL;
   if (mrb_get_args(mrb, "|o", &obj))
   {
-    handle = mrb_iup_get_handle(mrb, obj)->handle;
+    if (!mrb_nil_p(obj))
+    {
+      handle = mrb_iup_get_handle(mrb, obj)->handle;
+    }
   }
   return mrb_iup_new_handle(mrb, IupScrollBox(handle));
 }
@@ -235,7 +250,10 @@ mrb_iup_flat_scroll_box(mrb_state *mrb, mrb_value self)
   Ihandle *handle = NULL;
   if (mrb_get_args(mrb, "|o", &obj))
   {
-    handle = mrb_iup_get_handle(mrb, obj)->handle;
+    if (!mrb_nil_p(obj))
+    {
+      handle = mrb_iup_get_handle(mrb, obj)->handle;
+    }
   }
   return mrb_iup_new_handle(mrb, IupFlatScrollBox(handle));
 }
@@ -247,7 +265,10 @@ mrb_iup_detach_box(mrb_state *mrb, mrb_value self)
   Ihandle *handle = NULL;
   if (mrb_get_args(mrb, "|o", &obj))
   {
-    handle = mrb_iup_get_handle(mrb, obj)->handle;
+    if (!mrb_nil_p(obj))
+    {
+      handle = mrb_iup_get_handle(mrb, obj)->handle;
+    }
   }
   return mrb_iup_new_handle(mrb, IupDetachBox(handle));
 }
@@ -259,9 +280,51 @@ mrb_iup_expander(mrb_state *mrb, mrb_value self)
   Ihandle *handle = NULL;
   if (mrb_get_args(mrb, "|o", &obj))
   {
-    handle = mrb_iup_get_handle(mrb, obj)->handle;
+    if (!mrb_nil_p(obj))
+    {
+      handle = mrb_iup_get_handle(mrb, obj)->handle;
+    }
   }
   return mrb_iup_new_handle(mrb, IupExpander(handle));
+}
+
+static mrb_value
+mrb_iup_sbox(mrb_state *mrb, mrb_value self)
+{
+  mrb_value obj;
+  Ihandle *handle = NULL;
+  if (mrb_get_args(mrb, "|o", &obj))
+  {
+    if (!mrb_nil_p(obj))
+    {
+      handle = mrb_iup_get_handle(mrb, obj)->handle;
+    }
+  }
+  return mrb_iup_new_handle(mrb, IupSbox(handle));
+}
+
+static mrb_value
+mrb_iup_split(mrb_state *mrb, mrb_value self)
+{
+  mrb_value o1, o2;
+  Ihandle *h1 = NULL;
+  Ihandle *h2 = NULL;
+  mrb_int argc = mrb_get_args(mrb, "|oo", &o1, &o2);
+  if (argc)
+  {
+    if (!mrb_nil_p(o1))
+    {
+      h1 = mrb_iup_get_handle(mrb, o1)->handle;
+    }
+  }
+  if (argc < 2)
+  {
+    if (!mrb_nil_p(o2))
+    {
+      h2 = mrb_iup_get_handle(mrb, o2)->handle;
+    }
+  }
+  return mrb_iup_new_handle(mrb, IupSplit(h1, h2));
 }
 
 void
@@ -294,4 +357,7 @@ mrb_init_iup_containers(mrb_state *mrb, struct RClass *iup)
   mrb_define_module_function(mrb, iup, "detach_box", mrb_iup_detach_box, MRB_ARGS_OPT(1));
 
   mrb_define_module_function(mrb, iup, "expander", mrb_iup_expander, MRB_ARGS_OPT(1));
+
+  mrb_define_module_function(mrb, iup, "sbox", mrb_iup_sbox, MRB_ARGS_OPT(1));
+  mrb_define_module_function(mrb, iup, "split", mrb_iup_split, MRB_ARGS_OPT(2));
 }
